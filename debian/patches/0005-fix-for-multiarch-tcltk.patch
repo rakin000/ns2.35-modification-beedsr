@@ -1,0 +1,44 @@
+--- a/conf/configure.in.tcl
++++ b/conf/configure.in.tcl
+@@ -199,6 +199,7 @@
+                 $x_libs \
+                 /usr/lib64 \
+                 /usr/lib \
++		/usr/lib/$DEB_HOST_MULTIARCH \
+ 		"
+ 
+ dnl Decide which set of .tcl library files to use
+--- a/conf/configure.in.tk
++++ b/conf/configure.in.tk
+@@ -163,7 +163,9 @@
+                 $x_libs/tk \
+                 $x_libs \
+                 /usr/lib64 \
+-                /usr/lib"
++                /usr/lib \
++		/usr/lib/$DEB_HOST_MULTIARCH \
++		"
+ 
+ NS_BEGIN_PACKAGE(tk)
+ NS_CHECK_HEADER_PATH(tk.h,$TK_H_PLACES,$d,$TK_H_PLACES_D,V_INCLUDE_TK,tk)
+--- a/configure
++++ b/configure
+@@ -5641,6 +5641,7 @@
+                 $x_libs \
+                 /usr/lib64 \
+                 /usr/lib \
++		/usr/lib/$DEB_HOST_MULTIARCH \
+ 		"
+ 
+ 
+@@ -6208,7 +6209,9 @@
+                 $x_libs/tk \
+                 $x_libs \
+                 /usr/lib64 \
+-                /usr/lib"
++                /usr/lib \
++		/usr/lib/$DEB_HOST_MULTIARCH \
++		"
+ 
+ 
+ NS_PACKAGE_tk_UNDERWAY=false
