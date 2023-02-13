@@ -128,7 +128,7 @@ public:
   ~DSRAgent();
 
 private:
-  bool node_initialized = 0 ;
+  bool node_initialized = 0 ; // silly variable added by Mr. Rakin
 
   Trace *logtarget;
   int off_mac_;
