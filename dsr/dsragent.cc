@@ -609,6 +609,8 @@ void DSRAgent::recv(Packet *packet, Handler *)
   hdr_ip *iph = hdr_ip::access(packet);
   hdr_cmn *cmh = hdr_cmn::access(packet);
 
+
+  printf("In DSRAgent::recv(), nodeid: %d ; packet type: %s\n", node_->nodeid(), packet_info.name( (packet_t)cmh->ptype() ) ) ;
   // special process for GAF
   if (cmh->ptype() == PT_GAF)
   {
@@ -634,6 +636,8 @@ void DSRAgent::recv(Packet *packet, Handler *)
   p.dest = ID((Address::instance().get_nodeaddr(iph->daddr())), ::IP);
   p.src = ID((Address::instance().get_nodeaddr(iph->saddr())), ::IP);
 
+  printf("originates here xD\n") ;
+  
   assert(logtarget != 0);
 
   if (srh->valid() != 1)
