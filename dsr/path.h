@@ -77,27 +77,39 @@ enum ID_Type {NONE = NS_AF_NONE, MAC = NS_AF_ILINK, IP = NS_AF_INET };
 
 struct ID {
   friend class Path; 
-  ID() : type(NONE), t(-1), link_type(LT_NONE), log_stat(LS_NONE) {}
+  ID() : type(NONE), t(-1), link_type(LT_NONE), log_stat(LS_NONE), node_energy(0.0), node_pos_x(0.0), node_pos_y(0.0), node_pos_z(0.0) {}
   //  ID():addr(0),type(NONE) {}	// remove for speed? -dam 1/23/98
   //ID(unsigned long name, ID_Type t):addr(name),type(t), t(-1), link_type(LT_NONE),log_stat(LS_NONE)
   //{
   //assert(type == NONE || type == MAC || type == IP);
   //}
   ID(unsigned long name, ID_Type t):addr(name), type(t), t(-1), 
-    link_type(LT_NONE),log_stat(LS_NONE)
+    link_type(LT_NONE),log_stat(LS_NONE), node_energy(0.0), node_pos_x(0.0), node_pos_y(0.0), node_pos_z(0.0)
 	{
 		assert(type == NONE || type == MAC || type == IP);
-	}
+  }
   inline ID(const struct sr_addr &a): addr(a.addr), 
     type((enum ID_Type) a.addr_type), t(-1), link_type(LT_NONE),
-	  log_stat(LS_NONE)
+	  log_stat(LS_NONE), node_energy(0.0), node_pos_x(0.0), node_pos_y(0.0), node_pos_z(0.0) 
 	{
 		assert(type == NONE || type == MAC || type == IP);
 	}
   inline void fillSRAddr(struct sr_addr& a) {
 	  a.addr_type = (int) type;
 	  a.addr = addr;
+    a.node_energy = node_energy ;
+    a.pos_x = node_pos_x ;
+    a.pos_y = node_pos_y ;
+    a.pos_z = node_pos_z ;
   }    
+  inline void fillSRAddr(struct sr_addr& a, double node_energy, double node_pos_x, double node_pos_y, double node_pos_z) {
+    a.addr_type = (int) type ;
+    a.addr = addr; 
+    a.node_energy = node_energy;
+    a.pos_x = node_pos_x ;
+    a.pos_y = node_pos_y ;
+    a.pos_z = node_pos_z ;
+  }
   inline nsaddr_t getNSAddr_t() const {
 	  assert(type == IP); return addr;
   }
@@ -111,6 +123,8 @@ struct ID {
 
   unsigned long addr;
   ID_Type type;
+  double node_energy;
+  double node_pos_x, node_pos_y, node_pos_z ;
 
   Time t;			// when was this ID added to the route
   Link_Type link_type;
@@ -136,7 +150,7 @@ public:
 
   inline ID& next() {assert(cur_index < len); return path[cur_index++];}
   inline void resetIterator() {  cur_index = 0;}
-  inline void reset() {len = 0; cur_index = 0;}
+  inline void reset() {len = 0; cur_index = 0;total_path_distance=0.0;total_path_energy=0.0;}
 
   inline void setIterator(int i) {assert(i>=0 && i<len); cur_index = i;}
   inline void setLength(int l) {assert(l>=0 && l<=MAX_SR_LEN); len = l;}
@@ -173,6 +187,8 @@ private:
   int cur_index;
   ID* path;
   ID path_owner;
+  double total_path_energy ;
+  double total_path_distance ;
 };
 
 void compressPath(Path& path);

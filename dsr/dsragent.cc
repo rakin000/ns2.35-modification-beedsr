@@ -116,8 +116,8 @@ static const int min_adv_interval = 5;
 static const int default_flow_timeout = 60;
 // #define DSRFLOW_VERBOSE
 
-static const int verbose = 0;
-static const int verbose_srr = 0;
+static const int verbose = 1;
+static const int verbose_srr = 1;
 static const int verbose_ssalv = 1;
 
 DSRAgent_List DSRAgent::agthead = {0};
@@ -137,58 +137,60 @@ Time rt_rep_holdoff_period = 3.0e-3; // secs (about 2*process_time)
 Time grat_hold_down_time = 1.0; // (sec) min time between grat replies for
                                 // same route
 
-Time max_err_hold = 1.0; // (sec)
 // maximum time between when we recv a route error told to us, and when we
 // transmit a propagating route request that can carry that data.  used to
 // keep us from propagating stale route error data
+// (sec)
+Time max_err_hold = 1.0; 
 
 /*************** selectors ******************/
-bool dsragent_snoop_forwarded_errors = true;
 // give errors we forward to our cache?
-bool dsragent_snoop_source_routes = true;
+bool dsragent_snoop_forwarded_errors = true;
 // should we snoop on any source routes we see?
-bool dsragent_reply_only_to_first_rtreq = false;
+bool dsragent_snoop_source_routes = true;
 // should we only respond to the first route request we receive from a host?
-bool dsragent_propagate_last_error = true;
+bool dsragent_reply_only_to_first_rtreq = false;
 // should we take the data from the last route error msg sent to us
 // and propagate it around on the next propagating route request we do?
 // this is aka grat route error propagation
-bool dsragent_send_grat_replies = true;
+bool dsragent_propagate_last_error = true;
 // should we send gratuitous replies to effect route shortening?
-bool dsragent_salvage_with_cache = true;
+bool dsragent_send_grat_replies = true;
 // should we consult our cache for a route if we get a xmitfailure
 // and salvage the packet using the route if possible
-bool dsragent_use_tap = true;
+bool dsragent_salvage_with_cache = true;
 // should we listen to a promiscuous tap?
-bool dsragent_reply_from_cache_on_propagating = true;
+bool dsragent_use_tap = true;
 // should we consult the route cache before propagating rt req's and
 // answer if possible?
-bool dsragent_ring_zero_search = true;
+bool dsragent_reply_from_cache_on_propagating = true;
 // should we send a non-propagating route request as the first action
 // in each route discovery action?
-
 // NOTE: to completely turn off replying from cache, you should
 // set both dsragent_ring_zero_search and
 // dsragent_reply_from_cache_on_propagating to false
+bool dsragent_ring_zero_search = true;
 
-bool dsragent_dont_salvage_bad_replies = true;
 // if we have an xmit failure on a packet, and the packet contains a
 // route reply, should we scan the reply to see if contains the dead link?
 // if it does, we won't salvage the packet unless there's something aside
 // from a reply in it (in which case we salvage, but cut out the rt reply)
-bool dsragent_require_bi_routes = true;
+bool dsragent_dont_salvage_bad_replies = true;
+
 // do we need to have bidirectional source routes?
 // [XXX this flag doesn't control all the behaviors and code that assume
 // bidirectional links -dam 5/14/98]
+bool dsragent_require_bi_routes = true;
 
 #if 0
-bool lsnode_holdoff_rt_reply = true;
 // if we have a cached route to reply to route_request with, should we
 // hold off and not send it for a while?
-bool lsnode_require_use = true;
+bool lsnode_holdoff_rt_reply = true;
 // do we require ourselves to hear a route requestor use a route
 // before we withold our route, or is merely hearing another (better)
 // route reply enough?
+bool lsnode_require_use = true;
+
 #endif
 
 /*
@@ -442,17 +444,17 @@ void DSRAgent::testinit()
 
 int DSRAgent::command(int argc, const char *const *argv)
 {
-  trace("In DSRAgent::command(), net_id: %d: ", net_id);
-  for (int i = 0; i < argc; i++)
-    trace("%s ", argv[i]);
-  trace("\n");
-  if (node_initialized)
-  {
-    trace("node id: %d \nnode X: %d \nnode Y: %d\n", node_->nodeid(), node_->X(), node_->Y());
-    trace("Tracing called\n");
-    if (node_->energy_model())
-      trace("node energy: %lf\n", node_->energy_model()->energy());
-  }
+  // trace("In DSRAgent::command(), net_id: %d: ", net_id);
+  // for (int i = 0; i < argc; i++)
+  //   trace("%s ", argv[i]);
+  // trace("\n");
+  // if (node_initialized)
+  // {
+  //   trace("node id: %d \nnode X: %d \nnode Y: %d\n", node_->nodeid(), node_->X(), node_->Y());
+  //   trace("Tracing called\n");
+  //   if (node_->energy_model())
+  //     trace("node energy: %lf\n", node_->energy_model()->energy());
+  // }
   TclObject *obj;
 
   if (argc == 2)
@@ -610,7 +612,7 @@ void DSRAgent::recv(Packet *packet, Handler *)
   hdr_cmn *cmh = hdr_cmn::access(packet);
 
 
-  printf("In DSRAgent::recv(), nodeid: %d ; packet type: %s\n", node_->nodeid(), packet_info.name( (packet_t)cmh->ptype() ) ) ;
+  // printf("In DSRAgent::recv(), nodeid: %d ; packet type: %s\n", node_->nodeid(), packet_info.name( (packet_t)cmh->ptype() ) ) ;
   // special process for GAF
   if (cmh->ptype() == PT_GAF)
   {
@@ -618,7 +620,7 @@ void DSRAgent::recv(Packet *packet, Handler *)
     {
       if (cmh->direction() == hdr_cmn::UP)
         cmh->direction() = hdr_cmn::DOWN;
-      Scheduler::instance().schedule(ll, packet, 0);
+      Scheduler::instance().schedule(ll, packet, 0); // retry = 0 
       return;
     }
     else
@@ -636,8 +638,8 @@ void DSRAgent::recv(Packet *packet, Handler *)
   p.dest = ID((Address::instance().get_nodeaddr(iph->daddr())), ::IP);
   p.src = ID((Address::instance().get_nodeaddr(iph->saddr())), ::IP);
 
-  printf("originates here xD\n") ;
-  
+  // if( p.src == net_id ) printf("originates here xD, packet type: %s \n",  packet_info.name( (packet_t)cmh->ptype() )) ;
+
   assert(logtarget != 0);
 
   if (srh->valid() != 1)
@@ -657,9 +659,9 @@ void DSRAgent::recv(Packet *packet, Handler *)
     else
     {
       // this must be an outgoing packet, it doesn't have a SR header on it
-
       srh->init();               // give packet an SR header now
       cmh->size() += IP_HDR_LEN; // add on IP header size
+      // fprintf(stdout,"Yes this is what you guessed ( cbr packet ), packet type : %s\n", packet_info.name( (packet_t)cmh->ptype() ));
       if (verbose)
         trace("S %.9f _%s_ originating %s -> %s",
               Scheduler::instance().clock(), net_id.dump(), p.src.dump(),
@@ -756,7 +758,6 @@ void DSRAgent::handlePktWithoutSR(SRPacket &p, bool retry)
 void DSRAgent::handlePacketReceipt(SRPacket &p)
 /* Handle a packet destined to us */
 {
-  // printf("In DSRAgent::handlePacketReceipt(P)\n");
   hdr_cmn *cmh = hdr_cmn::access(p.pkt);
   hdr_sr *srh = hdr_sr::access(p.pkt);
 
@@ -1276,12 +1277,12 @@ bool DSRAgent::replyFromRouteCache(SRPacket &p)
   return true;
 }
 
-void DSRAgent::sendOutPacketWithRoute(SRPacket &p, bool fresh, Time delay)
 // take packet and send it out, packet must a have a route in it
 // return value is not very meaningful
 // if fresh is true then reset the path before using it, if fresh
 //  is false then our caller wants us use a path with the index
 //  set as it currently is
+void DSRAgent::sendOutPacketWithRoute(SRPacket &p, bool fresh, Time delay)
 {
   hdr_sr *srh = hdr_sr::access(p.pkt);
   hdr_cmn *cmnh = hdr_cmn::access(p.pkt);
@@ -1315,6 +1316,7 @@ void DSRAgent::sendOutPacketWithRoute(SRPacket &p, bool fresh, Time delay)
   }
 
   p.route.fillSR(srh);
+  addNodeInformationToReplyHeader(srh);
 
   // set direction of pkt to DOWN , i.e downward
   cmnh->direction() = hdr_cmn::DOWN;
@@ -1663,10 +1665,10 @@ void DSRAgent::sendOutRtReq(SRPacket &p, int max_prop)
   sendOutPacketWithRoute(p, false);
 }
 
-void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
 // take the route in p, add us to the end of it and return the
 // route to the sender of p
 // doesn't free p.pkt
+void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
 {
   hdr_sr *old_srh = hdr_sr::access(p.pkt);
 
@@ -1695,6 +1697,9 @@ void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
   for (int i = 0; i < p_copy.route.length(); i++)
     p_copy.route[i].fillSRAddr(new_srh->reply_addrs()[i]);
   new_srh->route_reply_len() = p_copy.route.length();
+  // p.route.fillSR(srh);
+  // new_srh->route_reply_len() = 0 ;
+  // addNodeInformationToReplyHeader(new_srh);
   new_srh->route_reply() = 1;
 
   // propagate the request sequence number in the reply for analysis purposes
@@ -1762,6 +1767,7 @@ void DSRAgent::acceptRouteReply(SRPacket &p)
 {
   hdr_sr *srh = hdr_sr::access(p.pkt);
   Path reply_route(srh->reply_addrs(), srh->route_reply_len());
+  // reply_route.reverseInPlace() ;
 
   if (!srh->route_reply())
   { // somethings wrong...
@@ -1785,9 +1791,9 @@ void DSRAgent::acceptRouteReply(SRPacket &p)
   // #endif //GOD_FEEDBACK
 
   if (verbose_srr)
-    trace("SRR %.9f _%s_ reply-received %d from %s  %s #%d -> %s %s",
+    trace("SRR %.9f _%s_ reply-received %s from %s  %s #%d -> %s %s",
           Scheduler::instance().clock(), net_id.dump(),
-          good_reply ? 1 : 0,
+          good_reply ? "good_reply" : "bad_reply",
           p.src.dump(), reply_route[0].dump(), srh->rtreq_seq(),
           reply_route[reply_route.length() - 1].dump(),
           reply_route.dump());

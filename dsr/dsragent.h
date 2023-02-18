@@ -256,11 +256,16 @@ private:
   // see if any packets in send buffer need route requests sent out
   // for them, or need to be expired
 
-  void sendRouteShortening(SRPacket &p, int heard_at, int xmit_at);
   // p was overheard at heard_at in it's SR, but we aren't supposed to
   // get it till xmit_at, so all the nodes between heard_at and xmit_at
   // can be elided.  Send originator of p a gratuitous route reply to 
   // tell them this.
+  void sendRouteShortening(SRPacket &p, int heard_at, int xmit_at);
+  // add node information to route reply  
+  inline void addNodeInformationToReplyHeader(hdr_sr *srh) { 
+		if( srh->route_reply_len() < MAX_SR_LEN )
+      srh->route_reply_add_addrs(node_->energy_model()->energy(),node_->X(),node_->Y(),node_->Z()) ;
+  }
 
   void testinit();
   void trace(char* fmt, ...);
