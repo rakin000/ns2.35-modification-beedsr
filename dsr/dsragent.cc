@@ -1130,7 +1130,8 @@ void DSRAgent::handleRouteRequest(SRPacket &p)
     return;
   }
 
-  // add ourselves to the source route
+  // add ourselves to the source route, before that update node information 
+  updateNodeInformationToNetID() ; 
   p.route.appendToPath(net_id);
 
   if (verbose_srr)
@@ -1198,6 +1199,7 @@ bool DSRAgent::replyFromRouteCache(SRPacket &p)
     return false; // too long to work with...
 
   // add our suggested completion to the route so far
+  updateNodeInformationToNetID() ;
   complete_route.appendPath(rest_of_route);
 
   // call compressPath to remove any double backs
@@ -1240,6 +1242,7 @@ bool DSRAgent::replyFromRouteCache(SRPacket &p)
   }
 
   // make up and send out a route reply
+  updateNodeInformationToNetID() ;
   p.route.appendToPath(net_id);
   p.route.reverseInPlace();
   route_cache->addRoute(p.route, Scheduler::instance().clock(), net_id);
@@ -1316,7 +1319,7 @@ void DSRAgent::sendOutPacketWithRoute(SRPacket &p, bool fresh, Time delay)
   }
 
   p.route.fillSR(srh);
-  addNodeInformationToReplyHeader(srh);
+  // appendNodeInformationToReplyHeader(srh);
 
   // set direction of pkt to DOWN , i.e downward
   cmnh->direction() = hdr_cmn::DOWN;
@@ -1639,6 +1642,7 @@ void DSRAgent::sendOutRtReq(SRPacket &p, int max_prop)
   srh->rtreq_seq() = route_request_num++;
   srh->max_propagation() = max_prop;
   p.route.reset();
+  updateNodeInformationToNetID();
   p.route.appendToPath(net_id);
 
   if (dsragent_propagate_last_error && route_error_held && Scheduler::instance().clock() - route_error_data_time < max_err_hold)
@@ -1680,6 +1684,7 @@ void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
   p_copy.dest = p.src;
   p_copy.src = net_id;
 
+  updateNodeInformationToNetID() ; 
   p_copy.route.appendToPath(net_id);
 
   hdr_ip *new_iph = hdr_ip::access(p_copy.pkt);
@@ -1697,9 +1702,8 @@ void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
   for (int i = 0; i < p_copy.route.length(); i++)
     p_copy.route[i].fillSRAddr(new_srh->reply_addrs()[i]);
   new_srh->route_reply_len() = p_copy.route.length();
-  // p.route.fillSR(srh);
   // new_srh->route_reply_len() = 0 ;
-  // addNodeInformationToReplyHeader(new_srh);
+  // appendNodeInformationToReplyHeader(new_srh);
   new_srh->route_reply() = 1;
 
   // propagate the request sequence number in the reply for analysis purposes

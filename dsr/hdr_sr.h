@@ -212,7 +212,7 @@ public:
 			sr_reply_.rep_addrs_[sr_reply_.rep_rtlen_].pos_z = node_pos_z ;
 			sr_reply_.rep_rtlen_++ ;
 		// }
-	}
+	}	
 	inline int &route_error() { return sr_error_.err_valid_; }
 	inline int &num_route_errors() { return sr_error_.err_count_; }
 	inline struct link_down *down_links() { return sr_error_.err_links_; }

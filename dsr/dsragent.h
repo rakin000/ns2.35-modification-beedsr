@@ -262,9 +262,24 @@ private:
   // tell them this.
   void sendRouteShortening(SRPacket &p, int heard_at, int xmit_at);
   // add node information to route reply  
-  inline void addNodeInformationToReplyHeader(hdr_sr *srh) { 
-		if( srh->route_reply_len() < MAX_SR_LEN )
-      srh->route_reply_add_addrs(node_->energy_model()->energy(),node_->X(),node_->Y(),node_->Z()) ;
+  // void appendNodeInformationToReplyHeader(hdr_sr *srh) { 
+	// 	if( srh->route_reply_len() < MAX_SR_LEN ){
+  //     // updateNodeInformationToNetID() ;
+  //     // srh->route_reply_add_addrs(node_->energy_model()->energy(),node_->X(),node_->Y(),node_->Z()) ;
+  //     net_id.fillSRAddr(srh->reply_addrs()[srh->route_reply_len()] ) ;
+  //     srh->route_reply_len()++ ;
+  //   }
+  // }
+  inline void updateNodeInformationToNetID(){
+    // net_id.node_energy = node_->energy_model()->energy() ;
+    // net_id.node_pos_x = node_->X();
+    // net_id.node_pos_y = node_->Y() ;
+    // net_id.node_pos_z = node_->Z() ;
+   
+    // MAC_id.node_energy = node_->energy_model()->energy() ;
+    // MAC_id.node_pos_x = node_->X();
+    // MAC_id.node_pos_y = node_->Y() ;
+    // MAC_id.node_pos_z = node_->Z() ;
   }
 
   void testinit();
