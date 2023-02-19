@@ -440,8 +440,11 @@ Path::path_cost(int i,int j) {
 
   for(i=0;i<=j;i++)
     cost += path[i].node_energy ;
+  if( cost <= 0.0 )
+    return INFINITY ;
   for(i=0;i<j;i++)
     cost += euclidean_distance(i,i+1);
+  
   cost = 100.0*cost + (j-i+1.0) ;
   return cost ;
 }
