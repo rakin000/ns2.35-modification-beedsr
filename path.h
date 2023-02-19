@@ -186,6 +186,8 @@ public:
   inline ID &owner() {return path_owner;}
 
   void checkpath(void) const;
+  double path_cost() ;
+  double path_cost(int i,int j) ;
 private:
   int len;
   int cur_index;

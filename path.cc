@@ -426,6 +426,26 @@ Path::dump() const
   return rtn_buf;
 }
 
+double 
+Path::path_cost() {
+  if( total_energy <= 0.0 )
+    return INFINITY ;
+  return (total_energy+total_distance)*100.0+len; 
+}
+
+double 
+Path::path_cost(int i,int j) {
+  assert( i>0 && i<len && j>0 && j<len && i<=j ) ; 
+  double cost = 0.0 ;
+
+  for(i=0;i<=j;i++)
+    cost += path[i].node_energy ;
+  for(i=0;i<j;i++)
+    cost += euclidean_distance(i,i+1);
+  cost = 100.0*cost + (j-i+1.0) ;
+  return cost ;
+}
+
 void compressPath(Path &path)
 // take a path and remove any double backs from it
 // eg:  A B C B D --> A B D
