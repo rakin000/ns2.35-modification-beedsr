@@ -61,6 +61,7 @@ extern "C" {
 #include <stdio.h>
 #include <assert.h>
 #include <math.h>
+// #include <algorithm>
 }
 
 #include <packet.h>
@@ -75,7 +76,11 @@ enum Log_Status {LS_NONE = 0, LS_UNLOGGED = 1, LS_LOGGED = 2};
 // some type conversion between exisiting NS code and old DSR sim
 typedef double Time;
 enum ID_Type {NONE = NS_AF_NONE, MAC = NS_AF_ILINK, IP = NS_AF_INET };
+double inf = 1e18 ;
 
+inline double min(double a,double b){
+  return a<=b ? a: b;
+}
 struct ID {
   friend class Path; 
   ID() : type(NONE), t(-1), link_type(LT_NONE), log_stat(LS_NONE) {
@@ -158,7 +163,7 @@ public:
   inline void appendToPath(const ID& id) { 
     assert(len < MAX_SR_LEN); 
     path[len] = id;
-    total_energy += id.node_energy ;
+    min_energy = min(min_energy,id.node_energy) ;
     if( len > 0 ) 
       total_distance += euclidean_distance(len,len-1) ;
     len++;
@@ -186,6 +191,9 @@ public:
   inline ID &owner() {return path_owner;}
 
   void checkpath(void) const;
+  inline double cost_func(double energy, double euclidean_distance, double hops){
+    return -energy*energy+euclidean_distance+hops;
+  }
   double path_cost() ;
   double path_cost(int i,int j) ;
 private:
@@ -193,7 +201,7 @@ private:
   int cur_index;
   ID* path;
   ID path_owner;
-  double total_energy ;
+  double min_energy ;
   double total_distance ;
 };
 

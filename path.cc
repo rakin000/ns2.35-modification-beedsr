@@ -115,14 +115,14 @@ Path::Path(int route_len, const ID *route)
   assert(route_len <= MAX_SR_LEN);
   //  route_len = (route == NULL : 0 ? route_len);
   // a more cute solution, follow the above with the then clause
-  total_energy = 0.0;
+  min_energy = inf;
   total_distance = 0.0 ;
   if (route != NULL)
   {
     for (int c = 0; c < route_len; c++)
     {
       path[c] = route[c];
-      total_energy += route[c].node_energy;
+      min_energy = min(min_energy,route[c].node_energy);
     }
     for(int c=0;c<route_len-1;c++){
       total_distance += euclidean_distance(c,c+1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) 
@@ -144,7 +144,7 @@ Path::Path()
   len = 0;
   cur_index = 0;
   total_distance = 0.0;
-  total_energy =0.0;
+  min_energy = inf;
 }
 
 Path::Path(const struct sr_addr *addrs, int len)
@@ -152,10 +152,10 @@ Path::Path(const struct sr_addr *addrs, int len)
   assert(len <= MAX_SR_LEN);
   path = new ID[MAX_SR_LEN];
   total_distance = 0.0;
-  total_energy = 0.0 ;
+  min_energy = inf;
   for (int i = 0; i < len; i++){
     path[i] = ID(addrs[i]);
-    total_energy += path[i].node_energy ; 
+    min_energy = min(min_energy,path[i].node_energy) ; 
   }
   for( int c=0;c<len-1;c++){
     total_distance += euclidean_distance(c,c+1) ; /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) 
@@ -183,11 +183,11 @@ Path::Path(struct hdr_sr *srh)
 
   assert(len <= MAX_SR_LEN);
 
-  total_energy = 0.0;
+  min_energy = inf;
   total_distance = 0.0 ;
   for (int i = 0; i < len; i++){
     path[i] = ID(srh->addrs()[i]);
-    total_energy += path[i].node_energy ;
+    min_energy = min(min_energy,path[i].node_energy) ;
   }
   for( int c=0;c<len-1;c++){
     total_distance += euclidean_distance(c,c+1); /*sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) 
@@ -214,13 +214,14 @@ Path::Path(const Path &old)
     for (int c = 0; c < old.len; c++)
       path[c] = old.path[c];
     len = old.len;
-    total_energy = old.total_energy;
+    min_energy = old.min_energy;
     total_distance = old.total_distance;
   }
   else
   {
     len = 0;
-    total_energy = total_distance = 0.0 ;
+    min_energy = inf; 
+    total_distance = 0.0 ;
   }
   cur_index = old.cur_index;
   path_owner = old.path_owner;
@@ -255,7 +256,7 @@ void Path::operator=(const Path &rhs)
     cur_index = rhs.cur_index;
     path_owner = rhs.path_owner;
     total_distance = rhs.total_distance; 
-    total_energy = rhs.total_energy ;
+    min_energy = rhs.min_energy ;
     len = rhs.len;
     for (int c = 0; c < len; c++)
       path[c] = rhs.path[c];
@@ -275,7 +276,6 @@ bool Path::operator==(const Path &rhs)
       return false;
   return true;
 }
-// add energy and distance infromation 
 void Path::appendPath(Path &p)
 {
   int i;
@@ -290,6 +290,9 @@ void Path::appendPath(Path &p)
       len--;
       return;
     }
+// add energy and distance infromation 
+    min_energy = min(min_energy,p[i].node_energy); 
+    if( len > 0) total_distance += euclidean_distance(len,len-1) ;
   }
 }
 
@@ -322,6 +325,8 @@ void Path::copyInto(Path &to) const
   for (int c = 0; c < len; c++)
     to.path[c] = path[c];
   to.path_owner = path_owner;
+  to.min_energy = min_energy ;
+  to.total_distance = total_distance ;
 }
 
 Path Path::reverse() const
@@ -428,25 +433,23 @@ Path::dump() const
 
 double 
 Path::path_cost() {
-  if( total_energy <= 0.0 )
-    return INFINITY ;
-  return (total_energy+total_distance)*100.0+len; 
+  if( min_energy <= 0.0 )
+    return inf ;
+  return cost_func(min_energy, total_distance, len); 
 }
 
 double 
 Path::path_cost(int i,int j) {
   assert( i>0 && i<len && j>0 && j<len && i<=j ) ; 
-  double cost = 0.0 ;
+  double e=inf,ed=0.0;
 
   for(i=0;i<=j;i++)
-    cost += path[i].node_energy ;
-  if( cost <= 0.0 )
-    return INFINITY ;
+    e= min(e,path[i].node_energy) ;
+  if( e<= 0.0 )
+    return inf ;
   for(i=0;i<j;i++)
-    cost += euclidean_distance(i,i+1);
-  
-  cost = 100.0*cost + (j-i+1.0) ;
-  return cost ;
+    ed += euclidean_distance(i,i+1);
+  return cost_func(e,ed,len);  
 }
 
 void compressPath(Path &path)

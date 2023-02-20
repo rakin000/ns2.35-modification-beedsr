@@ -113,7 +113,7 @@ static const bool dsragent_prefer_default_flow = true;
 static const bool dsragent_prefer_shorter_over_default = true;
 static const bool dsragent_always_reestablish = true;
 static const int min_adv_interval = 5;
-static const int default_flow_timeout = 60;
+static const int default_flow_timeout = 20;
 // #define DSRFLOW_VERBOSE
 
 static const int verbose = 0;
