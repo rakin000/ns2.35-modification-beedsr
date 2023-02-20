@@ -76,7 +76,6 @@ enum Log_Status {LS_NONE = 0, LS_UNLOGGED = 1, LS_LOGGED = 2};
 // some type conversion between exisiting NS code and old DSR sim
 typedef double Time;
 enum ID_Type {NONE = NS_AF_NONE, MAC = NS_AF_ILINK, IP = NS_AF_INET };
-double inf = 1e18 ;
 
 inline double min(double a,double b){
   return a<=b ? a: b;
@@ -203,6 +202,7 @@ private:
   ID path_owner;
   double min_energy ;
   double total_distance ;
+  static const double inf = 1e18 ;
 };
 
 void compressPath(Path& path);

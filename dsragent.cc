@@ -113,7 +113,7 @@ static const bool dsragent_prefer_default_flow = true;
 static const bool dsragent_prefer_shorter_over_default = true;
 static const bool dsragent_always_reestablish = true;
 static const int min_adv_interval = 5;
-static const int default_flow_timeout = 20;
+static const int default_flow_timeout = 5;
 // #define DSRFLOW_VERBOSE
 
 static const int verbose = 0;
@@ -690,9 +690,9 @@ done:
 /*===========================================================================
   handlers for each class of packet
 ---------------------------------------------------------------------------*/
-void DSRAgent::handlePktWithoutSR(SRPacket &p, bool retry)
 /* obtain a source route to p's destination and send it off.
    this should be a retry if the packet is already in the sendbuffer */
+void DSRAgent::handlePktWithoutSR(SRPacket &p, bool retry)
 {
   assert(HDR_SR(p.pkt)->valid());
 
@@ -785,6 +785,12 @@ void DSRAgent::handlePacketReceipt(SRPacket &p)
     iph->daddr() = ((iph->dport() & mask) << shift) | ((~(mask) << shift) & iph->dst());
   }
 #endif
+
+// accept route reply unconditionally  
+  if( srh->valid() && !srh->route_reply() ){
+    srh->route_reply() = 1;  // necessary for acceptRouteReply(p) to check if its valid route reply ;
+    acceptRouteReply(p) ;
+  }
 
   cmh->size() -= srh->size(); // cut off the SR header 4/7/99 -dam
   srh->valid() = 0;
