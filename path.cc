@@ -433,8 +433,6 @@ Path::dump() const
 
 double 
 Path::path_cost() {
-  if( min_energy <= 0.0 )
-    return inf ;
   return cost_func(min_energy, total_distance, len); 
 }
 
@@ -445,8 +443,6 @@ Path::path_cost(int i,int j) {
 
   for(i=0;i<=j;i++)
     e= min(e,path[i].node_energy) ;
-  if( e<= 0.0 )
-    return inf ;
   for(i=0;i<j;i++)
     ed += euclidean_distance(i,i+1);
   return cost_func(e,ed,len);  

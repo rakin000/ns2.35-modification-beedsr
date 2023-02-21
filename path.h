@@ -191,7 +191,7 @@ public:
 
   void checkpath(void) const;
   inline double cost_func(double energy, double euclidean_distance, double hops){
-    return -energy*1000.0+euclidean_distance+hops*10.0;
+    return (energy>1.0 && energy<=inf) ? -energy*1000.0+euclidean_distance+hops*10.0 : inf;
   }
   double path_cost() ;
   double path_cost(int i,int j) ;
