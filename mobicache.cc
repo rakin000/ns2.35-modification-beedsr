@@ -537,8 +537,9 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     if (n == cache[index].length())
     { // new rt completely contains cache[index] (or cache[index] is empty)
       common_prefix_len = n;
-      for (; n < path.length(); n++)
-        cache[index].appendToPath(path[n]);
+      // for (; n < path.length(); n++)
+        // cache[index].appendToPath(path[n]);
+      cache[index] = path; // need new energy and distance information ;
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s suffix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),
@@ -548,6 +549,7 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     else if (n == path.length())
     { // new route already contained in the cache
       common_prefix_len = n;
+      cache[index] = path; // need new energy and distance information ;
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s prefix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),

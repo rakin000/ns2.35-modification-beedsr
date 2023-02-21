@@ -109,9 +109,9 @@ static bool dsr_salvage_allow_propagating = 0;
 
 /* couple of flowstate constants... */
 static const bool dsragent_enable_flowstate = true;
-static const bool dsragent_prefer_default_flow = true;
+static const bool dsragent_prefer_default_flow = false ; // true;
 static const bool dsragent_prefer_shorter_over_default = true;
-static const bool dsragent_always_reestablish = true;
+static const bool dsragent_always_reestablish = false ; // true;
 static const int min_adv_interval = 5;
 static const int default_flow_timeout = 5;
 // #define DSRFLOW_VERBOSE
@@ -143,43 +143,43 @@ Time max_err_hold = 1.0; // (sec)
 // keep us from propagating stale route error data
 
 /*************** selectors ******************/
-bool dsragent_snoop_forwarded_errors = true;
 // give errors we forward to our cache?
-bool dsragent_snoop_source_routes = true;
+bool dsragent_snoop_forwarded_errors = true;
 // should we snoop on any source routes we see?
-bool dsragent_reply_only_to_first_rtreq = false;
+bool dsragent_snoop_source_routes = true;
 // should we only respond to the first route request we receive from a host?
-bool dsragent_propagate_last_error = true;
+bool dsragent_reply_only_to_first_rtreq = false;
 // should we take the data from the last route error msg sent to us
 // and propagate it around on the next propagating route request we do?
 // this is aka grat route error propagation
-bool dsragent_send_grat_replies = true;
+bool dsragent_propagate_last_error = true;
 // should we send gratuitous replies to effect route shortening?
-bool dsragent_salvage_with_cache = true;
+bool dsragent_send_grat_replies = true;
 // should we consult our cache for a route if we get a xmitfailure
 // and salvage the packet using the route if possible
-bool dsragent_use_tap = true;
+bool dsragent_salvage_with_cache = true;
 // should we listen to a promiscuous tap?
-bool dsragent_reply_from_cache_on_propagating = true;
+bool dsragent_use_tap = true;
 // should we consult the route cache before propagating rt req's and
 // answer if possible?
-bool dsragent_ring_zero_search = true;
+bool dsragent_reply_from_cache_on_propagating = true;
 // should we send a non-propagating route request as the first action
 // in each route discovery action?
 
 // NOTE: to completely turn off replying from cache, you should
 // set both dsragent_ring_zero_search and
 // dsragent_reply_from_cache_on_propagating to false
+bool dsragent_ring_zero_search = true;
 
-bool dsragent_dont_salvage_bad_replies = true;
 // if we have an xmit failure on a packet, and the packet contains a
 // route reply, should we scan the reply to see if contains the dead link?
 // if it does, we won't salvage the packet unless there's something aside
 // from a reply in it (in which case we salvage, but cut out the rt reply)
-bool dsragent_require_bi_routes = true;
+bool dsragent_dont_salvage_bad_replies = true;
 // do we need to have bidirectional source routes?
 // [XXX this flag doesn't control all the behaviors and code that assume
 // bidirectional links -dam 5/14/98]
+bool dsragent_require_bi_routes = true;
 
 #if 0
 bool lsnode_holdoff_rt_reply = true;
