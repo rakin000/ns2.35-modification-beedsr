@@ -150,7 +150,10 @@ public:
 
   inline ID& next() {assert(cur_index < len); return path[cur_index++];}
   inline void resetIterator() {  cur_index = 0;}
-  inline void reset() {len = 0; cur_index = 0;}
+  inline void reset() {
+    len = 0; cur_index = 0; 
+    // min_energy = inf; total_distance = 0.0 ;
+  }
 
   inline void setIterator(int i) {assert(i>=0 && i<len); cur_index = i;}
   inline void setLength(int l) {assert(l>=0 && l<=MAX_SR_LEN); len = l;}
@@ -162,9 +165,8 @@ public:
   inline void appendToPath(const ID& id) { 
     assert(len < MAX_SR_LEN); 
     path[len] = id;
-    min_energy = min(min_energy,id.node_energy) ;
-    if( len > 0 ) 
-      total_distance += euclidean_distance(len,len-1) ;
+    min_energy[len] = (len>0) ? min(min_energy[len-1],id.node_energy) : id.node_energy ;
+    hop_distance[len] = ( len > 0 ) ? euclidean_distance(len,len-1)+hop_distance[len-1] : 0.0  ;
     len++;
   }
   void appendPath(Path& p);
@@ -191,17 +193,21 @@ public:
 
   void checkpath(void) const;
   inline double cost_func(double energy, double euclidean_distance, double hops){
-    return (energy>1.0 && energy<=inf) ? -energy*1000.0+euclidean_distance+hops*10.0 : inf;
+    return (energy>1.0 && energy<=inf) ? -energy*10000.0+euclidean_distance+hops*100.0 : inf;
   }
   double path_cost() ;
   double path_cost(int i,int j) ;
+  inline double minimum_energy(int i) { return (i==0 && i<len) ? 0.0 : min_energy[i] ; }
+  inline double total_distance(int i) { return (i==0 && i<len) ? 0.0 : hop_distance[i] ; }
+  inline double minimum_energy() { return (len) ? min_energy[len-1] : 0.0 ; }
+  inline double total_distance() { return (len) ? hop_distance[len-1] : 0.0; }
 private:
   int len;
   int cur_index;
   ID* path;
   ID path_owner;
-  double min_energy ;
-  double total_distance ;
+  double* min_energy ;
+  double* hop_distance ;
   static const double inf = 1e18 ;
 };
 
@@ -211,5 +217,6 @@ void compressPath(Path& path);
 
 void CopyIntoPath(Path& to, const Path& from, int start, int stop);
 // sets to[0->(stop-start)] = from[start->stop]
+int compare(Path &lhs, int l_len, Path &rhs, int r_len ) ;
 
 #endif // _path_h

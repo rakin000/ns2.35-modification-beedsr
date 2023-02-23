@@ -109,11 +109,11 @@ static bool dsr_salvage_allow_propagating = 0;
 
 /* couple of flowstate constants... */
 static const bool dsragent_enable_flowstate = true;
-static const bool dsragent_prefer_default_flow = false ; // true;
+static const bool dsragent_prefer_default_flow =  true;
 static const bool dsragent_prefer_shorter_over_default = true;
-static const bool dsragent_always_reestablish = false ; // true;
+static const bool dsragent_always_reestablish = true;
 static const int min_adv_interval = 5;
-static const int default_flow_timeout = 5;
+static const int default_flow_timeout = 60;
 // #define DSRFLOW_VERBOSE
 
 static const int verbose = 0;
@@ -442,7 +442,16 @@ void DSRAgent::testinit()
 int DSRAgent::command(int argc, const char *const *argv)
 {
   TclObject *obj;
-
+  printf("In DSRAgent::command(), net_id: %d: command: ", net_id);
+  for (int i = 0; i < argc; i++)
+    printf("%s ", argv[i]);
+  printf("\n");
+  if ( node_initialized )
+  {
+    printf("node id: %d \nnode X: %d \nnode Y: %d\n", node_->nodeid(), node_->X(), node_->Y());
+    if (node_->energy_model())
+      printf("node energy: %lf\n", node_->energy_model()->energy());
+  }
   if (argc == 2)
   {
     if (strcasecmp(argv[1], "testinit") == 0)
@@ -545,6 +554,7 @@ int DSRAgent::command(int argc, const char *const *argv)
     else if (strcasecmp(argv[1], "node") == 0)
     {
       node_ = (MobileNode *)obj;
+      node_initialized = 1; 
       return TCL_OK;
     }
     else if (strcasecmp(argv[1], "port-dmux") == 0)
@@ -620,6 +630,8 @@ void DSRAgent::recv(Packet *packet, Handler *)
   p.src = ID((Address::instance().get_nodeaddr(iph->saddr())), ::IP);
 
   assert(logtarget != 0);
+
+  updateNodeInformationToNetID();
 
   if (srh->valid() != 1)
   {
@@ -787,10 +799,10 @@ void DSRAgent::handlePacketReceipt(SRPacket &p)
 #endif
 
 // accept route reply unconditionally  
-  if( srh->valid() && !srh->route_reply() ){
-    srh->route_reply() = 1;  // necessary for acceptRouteReply(p) to check if its valid route reply ;
-    acceptRouteReply(p) ;
-  }
+  // if( srh->valid() && !srh->route_reply() ){
+    // srh->route_reply() = 1;  // necessary for acceptRouteReply(p) to check if its valid route reply ;
+    // acceptRouteReply(p) ;
+  // }
 
   cmh->size() -= srh->size(); // cut off the SR header 4/7/99 -dam
   srh->valid() = 0;
@@ -1299,7 +1311,7 @@ void DSRAgent::sendOutPacketWithRoute(SRPacket &p, bool fresh, Time delay)
   }
 
   p.route.fillSR(srh);
-  appendNodeInformationToReplyHeader(srh) ;
+  // appendNodeInformationToReplyHeader(srh) ;
   // set direction of pkt to DOWN , i.e downward
   cmnh->direction() = hdr_cmn::DOWN;
 
@@ -1676,10 +1688,10 @@ void DSRAgent::returnSrcRouteToRequestor(SRPacket &p)
 
   hdr_sr *new_srh = hdr_sr::access(p_copy.pkt);
   new_srh->init();
-  // for (int i = 0; i < p_copy.route.length(); i++)
-    // p_copy.route[i].fillSRAddr(new_srh->reply_addrs()[i]);
-  // new_srh->route_reply_len() = p_copy.route.length();
-  new_srh->route_reply_len() = 0 ;
+  for (int i = 0; i < p_copy.route.length(); i++)
+    p_copy.route[i].fillSRAddr(new_srh->reply_addrs()[i]);
+  new_srh->route_reply_len() = p_copy.route.length();
+  // new_srh->route_reply_len() = 0 ;
   // appendNodeInformationToReplyHeader(new_srh) ;
   new_srh->route_reply() = 1;
 
@@ -1747,10 +1759,10 @@ void DSRAgent::acceptRouteReply(SRPacket &p)
    - doesn't free the pkt */
 {
   hdr_sr *srh = hdr_sr::access(p.pkt);
-  appendNodeInformationToReplyHeader(srh) ;
+  // appendNodeInformationToReplyHeader(srh) ;
   Path reply_route(srh->reply_addrs(), srh->route_reply_len());
-  reply_route.reverseInPlace() ;
-  ::compressPath(reply_route) ;
+  // ::compressPath(reply_route) ;
+  // reply_route.reverseInPlace() ;
 
   if (!srh->route_reply())
   { // somethings wrong...

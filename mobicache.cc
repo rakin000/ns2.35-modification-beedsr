@@ -119,6 +119,7 @@ private:
   int victim_ptr; // next victim for eviction
   MobiCache *routecache;
   char *name;
+  static const double energy_threshold = 1.0 ;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -498,10 +499,14 @@ bool Cache::searchRoute(const ID &dest, int &i, Path &path, int &index)
   int path_index = -1 ;
   int path_i = -1; 
   for (; index < size; index++)
-    for (int n = 0; n < cache[index].length(); n++)
+    for (int n = 0; n < cache[index].length(); n++){
+      if( cache[index].minimum_energy() < 1.0 ) {
+        cache[index].reset() ; 
+        continue ;
+      }
       if (cache[index][n] == dest)
       {
-        if( path_index == -1 || cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
+        if( path_index == -1 || compare(cache[path_index],path_i,cache[index],n) ) {//  cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
           path_index = index ; 
           path_i = n; 
         }
@@ -509,6 +514,7 @@ bool Cache::searchRoute(const ID &dest, int &i, Path &path, int &index)
         // path = cache[index];
         // return true;
       }
+    }
   // return false;
   if( path_index == -1 ) return 0 ;
   
@@ -540,6 +546,9 @@ Cache::addRoute(Path &path, int &common_prefix_len)
       // for (; n < path.length(); n++)
         // cache[index].appendToPath(path[n]);
       cache[index] = path; // need new energy and distance information ;
+      if( path.minimum_energy() <= energy_threshold ){
+        cache[index].reset() ;
+      }
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s suffix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),
@@ -550,6 +559,9 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     { // new route already contained in the cache
       common_prefix_len = n;
       cache[index] = path; // need new energy and distance information ;
+      if( path.minimum_energy() <= energy_threshold ){
+        cache[index].reset() ;
+      }
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s prefix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),

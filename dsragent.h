@@ -133,6 +133,8 @@ public:
   ~DSRAgent();
 
 private:
+  bool node_initialized = 0;
+
   Trace *logtarget;
   int off_mac_;
   int off_ll_;
