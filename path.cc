@@ -483,6 +483,18 @@ Path::path_cost(int i,int j) {
 
   return (len>0) ? cost_func(e,ed,len) : cost_func(0,0,len);  
 }
+void 
+Path::recalc_metrics(int i ){
+  assert(i<len) ;
+  if( !i ){
+    hop_distance[i]=0;
+    min_energy[i]=path[i].node_energy;
+  }
+  else {
+    hop_distance[i]=hop_distance[i-1]+euclidean_distance(i,i-1) ;
+    min_energy[i]=min(min_energy[i-1],path[i].node_energy) ;
+  } 
+}
 
 void compressPath(Path &path)
 // take a path and remove any double backs from it
@@ -548,16 +560,9 @@ void Path::checkpath() const
 
 int compare(Path &lhs,int l_len, Path &rhs, int r_len ){
   assert( l_len < lhs.length() && r_len < rhs.length() ) ; 
-  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
+  return lhs.path_cost(0,l_len) > rhs.path_cost(0,r_len) ;
 
-  // for(int i=0;i<=l_len;i++)
-  //   e1= min(e1,lhs[i].node_energy) ;
-  // for(int i=0;i<l_len;i++)
-  //   ed1 += lhs.euclidean_distance(i,i+1);
-  // for(int i=0;i<=l_len;i++)
-  //   e2= min(e2,rhs[i].node_energy) ;
-  // for(int i=0;i<l_len;i++)
-  //   ed2 += rhs.euclidean_distance(i,i+1);
+  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
 
   e1 = lhs.minimum_energy(l_len);
   e2 = rhs.minimum_energy(r_len) ;
@@ -567,24 +572,26 @@ int compare(Path &lhs,int l_len, Path &rhs, int r_len ){
   e1 = (e1 == 1e18) ? 0.0 : e1;
   e2 = (e2 == 1e18) ? 0.0 : e2;
 
-  if( e1 < 1.0 ) 
+  if( e1 <= Path::energy_threshold ) 
     return 1; 
-  if( e2 < 1.0 ) 
+  if( e2 <= Path::energy_threshold ) 
     return 0 ;
   
   if( l_len < r_len )
     return 0; 
   if( l_len > r_len ) 
     return 1; 
-  if( e1+ed1 > e2+ed2 ) 
+  // if( 1000.0*e1-ed1 > 1000.0*e2-ed2 ) 
+  //   return 0 ;
+  // if( 1000.0*e1-ed1 < 1000.0*e2-ed2 ) 
+    // return 1;
+  if( e1 > e2 ) 
     return 0 ;
-  if( e1+ed1 < e2+ed2 ) 
+  if( e1 < e2 ) 
     return 1;  
-  // if( ed1 < ed2 ) 
-    // return 0 ;
-  // if (ed1 > ed2 ) 
-    // return 1; 
-  
-
+  if( ed1 < ed2 ) 
+    return 0 ;
+  if (ed1 > ed2 ) 
+    return 1; 
   return 1 ;
 }

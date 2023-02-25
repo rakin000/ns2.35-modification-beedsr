@@ -193,14 +193,19 @@ public:
 
   void checkpath(void) const;
   inline double cost_func(double energy, double euclidean_distance, double hops){
-    return (energy>1.0 && energy<=inf) ? -energy*10000.0+euclidean_distance+hops*100.0 : inf;
+    return (energy>energy_threshold && energy<=inf) ? -energy*10000.0+euclidean_distance+hops*100.0 : inf;
+    // return hops;
   }
   double path_cost() ;
   double path_cost(int i,int j) ;
+  void recalc_metrics(int i) ;
   inline double minimum_energy(int i) { return (i==0 && i<len) ? 0.0 : min_energy[i] ; }
   inline double total_distance(int i) { return (i==0 && i<len) ? 0.0 : hop_distance[i] ; }
   inline double minimum_energy() { return (len) ? min_energy[len-1] : 0.0 ; }
   inline double total_distance() { return (len) ? hop_distance[len-1] : 0.0; }
+  
+  static const double inf = 1e18 ;
+  static const double energy_threshold=1.0e-3 ;
 private:
   int len;
   int cur_index;
@@ -208,7 +213,6 @@ private:
   ID path_owner;
   double* min_energy ;
   double* hop_distance ;
-  static const double inf = 1e18 ;
 };
 
 void compressPath(Path& path);

@@ -62,6 +62,7 @@ extern "C"
 
 #undef DEBUG
 
+#include <map>
 #include <god.h>
 #include "path.h"
 #include "routecache.h"
@@ -112,14 +113,15 @@ public:
   void noticeDeadLink(const ID &from, const ID &to);
   // the link from->to isn't working anymore, purge routes containing
   // it from the cache
-
+  void updateID(ID &id) ;
+  // static const double energy_threshold = 1.0e-3 ;
 private:
   Path *cache;
   int size;
   int victim_ptr; // next victim for eviction
   MobiCache *routecache;
   char *name;
-  static const double energy_threshold = 1.0 ;
+  std::map<unsigned long,ID > mp ;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -320,7 +322,7 @@ void MobiCache::addRoute(const Path &route, Time t, const ID &who_from)
 // who_from is the id of the routes provider
 {
   Path rt;
-
+  
   if (pre_addRoute(route, rt, t, who_from) == 0)
     return;
 
@@ -383,13 +385,18 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   assert(!(net_id == invalid_addr));
 
   index = 0;
-  while (primary_cache->searchRoute(dest, len, path, index))
-  {
+  bool found_in_cache = 0 ;
+  while (primary_cache->searchRoute(dest, len, path, index)){
     min_cache = 2;
-    if (len < min_length)
-    {
-      min_length = len;
-      route = path;
+    // if (len < min_length)
+    // {
+    //   min_length = len;
+    //   route = path;
+    // }
+    if( !found_in_cache || compare(route,min_length,path,len) ){
+      found_in_cache = 1;
+      min_length = len; 
+      route = path ;
     }
     index++;
   }
@@ -397,13 +404,20 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   index = 0;
   while (secondary_cache->searchRoute(dest, len, path, index))
   {
-    if (len < min_length)
-    {
-      min_index = index;
+    // if (len < min_length)
+    // {
+    //   min_index = index;
+    //   min_cache = 1;
+    //   min_length = len;
+    //   route = path;
+    // }
+    if( !found_in_cache || compare(route,min_length,path,len) ) {
+      found_in_cache = 1;
+      min_index = index ;
       min_cache = 1;
-      min_length = len;
-      route = path;
-    }
+      min_length = len ;
+      route = path; 
+    } 
     index++;
   }
 
@@ -500,28 +514,40 @@ bool Cache::searchRoute(const ID &dest, int &i, Path &path, int &index)
   int path_i = -1; 
   for (; index < size; index++)
     for (int n = 0; n < cache[index].length(); n++){
-      if( cache[index].minimum_energy() < 1.0 ) {
-        cache[index].reset() ; 
-        continue ;
-      }
+      // if( cache[index].minimum_energy() < 1.0 ) {
+        // cache[index].reset() ; 
+        // continue ;
+      // }
+      updateID(cache[index][n]);
+      cache[index].recalc_metrics(n) ;
       if (cache[index][n] == dest)
       {
-        if( path_index == -1 || compare(cache[path_index],path_i,cache[index],n) ) {//  cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
-          path_index = index ; 
-          path_i = n; 
-        }
-        // i = n;
-        // path = cache[index];
-        // return true;
+        // if( path_index == -1 || compare(cache[path_index],path_i,cache[index],n) ) {//  cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
+          // path_index = index ; 
+          // path_i = n; 
+        // }
+        i = n;
+        path = cache[index];
+        return true;
       }
     }
-  // return false;
-  if( path_index == -1 ) return 0 ;
+  return false;
+  // if( path_index == -1 ) return 0 ;
   
-  index = path_index; 
-  i = path_i; 
-  path = cache[index] ;
-  return 1; 
+  // index = path_index; 
+  // i = path_i; 
+  // path = cache[index] ;
+  // return 1; 
+}
+
+void
+Cache::updateID(ID &id){
+  if( mp.count(id.addr)){
+    if( mp[id.addr].t < id.t ) 
+      mp[id.addr]=id; 
+    id=mp[id.addr];
+  }
+  else mp[id.addr]=id;
 }
 
 Path *
@@ -529,6 +555,10 @@ Cache::addRoute(Path &path, int &common_prefix_len)
 {
   int index, m, n;
   int victim;
+
+  for(n=0;n<path.length();n++){
+    updateID(path[n]);
+  }
 
   // see if this route is already in the cache
   for (index = 0; index < size; index++)
@@ -543,10 +573,8 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     if (n == cache[index].length())
     { // new rt completely contains cache[index] (or cache[index] is empty)
       common_prefix_len = n;
-      // for (; n < path.length(); n++)
-        // cache[index].appendToPath(path[n]);
       cache[index] = path; // need new energy and distance information ;
-      if( path.minimum_energy() <= energy_threshold ){
+      if( path.minimum_energy() <= Path::energy_threshold ){
         cache[index].reset() ;
       }
       if (verbose_debug)
@@ -558,8 +586,10 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     else if (n == path.length())
     { // new route already contained in the cache
       common_prefix_len = n;
+      for (; n < cache[index].length(); n++)
+          path.appendToPath(cache[index][n]);
       cache[index] = path; // need new energy and distance information ;
-      if( path.minimum_energy() <= energy_threshold ){
+      if( path.minimum_energy() <= Path::energy_threshold ){
         cache[index].reset() ;
       }
       if (verbose_debug)

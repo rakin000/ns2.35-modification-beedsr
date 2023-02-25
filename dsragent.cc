@@ -442,16 +442,16 @@ void DSRAgent::testinit()
 int DSRAgent::command(int argc, const char *const *argv)
 {
   TclObject *obj;
-  printf("In DSRAgent::command(), net_id: %d: command: ", net_id);
-  for (int i = 0; i < argc; i++)
-    printf("%s ", argv[i]);
-  printf("\n");
-  if ( node_initialized )
-  {
-    printf("node id: %d \nnode X: %d \nnode Y: %d\n", node_->nodeid(), node_->X(), node_->Y());
-    if (node_->energy_model())
-      printf("node energy: %lf\n", node_->energy_model()->energy());
-  }
+  // printf("In DSRAgent::command(), net_id: %d: command: ", net_id);
+  // for (int i = 0; i < argc; i++)
+    // printf("%s ", argv[i]);
+  // printf("\n");
+  // if ( node_initialized )
+  // {
+    // printf("node id: %d \nnode X: %d \nnode Y: %d\n", node_->nodeid(), node_->X(), node_->Y());
+    // if (node_->energy_model())
+      // printf("node energy: %lf\n", node_->energy_model()->energy());
+  // }
   if (argc == 2)
   {
     if (strcasecmp(argv[1], "testinit") == 0)
@@ -3003,7 +3003,7 @@ inline void DSRAgent::updateNodeInformationToNetID()
     net_id.pos_x = node_->X();
     net_id.pos_y = node_->Y();
     net_id.pos_z = node_->Z();
-
+    net_id.t = Scheduler::instance().clock();
     //   MAC_id.pos_x = node_->X();
     //   MAC_id.pos_y = node_->Y();
     //   MAC_id.pos_z = node_->Z();
