@@ -416,7 +416,7 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
     index++;
   }
 
-  min_index=-1
+  // min_index=-1;
   index = 0;
   while (secondary_cache->searchRoute(dest, len, path, index))
   {
@@ -430,6 +430,7 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
     }
     index++;
   }
+
 
   if (min_cache == 1 && for_me)
   { // promote the found route to the primary cache
@@ -820,14 +821,15 @@ Cache::compare(Cache *c1, int i,int l_len, Cache *c2, int j, int r_len ){
     return 0; 
   if( l_len > r_len ) 
     return 1; 
-  if( e1 > e2) 
-    return 0 ;
-  if( e1 < e2) 
-    return 1;  
   if( ed1 < ed2 ) 
     return 0 ;
   if (ed1 > ed2 ) 
     return 1; 
+  if( e1 > e2) 
+    return 0 ;
+  if( e1 < e2) 
+    return 1;  
+  
   return 1 ;
 }
 
