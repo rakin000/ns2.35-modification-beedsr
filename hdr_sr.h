@@ -217,7 +217,7 @@ public:
 			sz += SR_HDR_SZ;
 
 		if (num_addrs_)			sz += 4 * (num_addrs_ - 1);
-		if (route_reply() || route_reply_len() > 0 )		sz += 5 + 4* route_reply_len();
+		if (route_reply())		sz += 5 + 4* route_reply_len();
 		if (route_request())		sz += 8;
 		if (route_error())		sz += 16 * num_route_errors();
 		if (flow_timeout())		sz += 4;

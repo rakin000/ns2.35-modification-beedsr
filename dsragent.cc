@@ -3003,7 +3003,7 @@ inline void DSRAgent::updateNodeInformationToNetID()
     net_id.pos_x = node_->X();
     net_id.pos_y = node_->Y();
     net_id.pos_z = node_->Z();
-
+    net_id.t = Scheduler::instance().clock();
     //   MAC_id.pos_x = node_->X();
     //   MAC_id.pos_y = node_->Y();
     //   MAC_id.pos_z = node_->Z();

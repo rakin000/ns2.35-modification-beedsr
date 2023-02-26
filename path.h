@@ -165,8 +165,8 @@ public:
   inline void appendToPath(const ID& id) { 
     assert(len < MAX_SR_LEN); 
     path[len] = id;
-    min_energy[len] = (len>0) ? min(min_energy[len-1],id.node_energy) : id.node_energy ;
-    hop_distance[len] = ( len > 0 ) ? euclidean_distance(len,len-1)+hop_distance[len-1] : 0.0  ;
+    // min_energy[len] = (len>0) ? min(min_energy[len-1],id.node_energy) : id.node_energy ;
+    // hop_distance[len] = ( len > 0 ) ? euclidean_distance(len,len-1)+hop_distance[len-1] : 0.0  ;
     len++;
   }
   void appendPath(Path& p);
@@ -179,9 +179,9 @@ public:
   void removeSection(int from, int to);
   // the elements at indices from -> to-1 are removed from the path
 
-  inline double euclidean_distance(int i,int j){  assert(i>0 && i<len && j>0 && j<len); return sqrt( (path[i].pos_x-path[j].pos_x)*(path[i].pos_x-path[j].pos_x) 
-                                                                                                  + (path[i].pos_y-path[j].pos_y)*(path[i].pos_y-path[j].pos_y)
-                                                                                                  + (path[i].pos_z-path[j].pos_z)*(path[i].pos_z-path[j].pos_z) ); }
+  // inline double euclidean_distance(int i,int j){  assert(i>0 && i<len && j>0 && j<len); return sqrt( (path[i].pos_x-path[j].pos_x)*(path[i].pos_x-path[j].pos_x) 
+                                                                                                  // + (path[i].pos_y-path[j].pos_y)*(path[i].pos_y-path[j].pos_y)
+                                                                                                  // + (path[i].pos_z-path[j].pos_z)*(path[i].pos_z-path[j].pos_z) ); }
   inline bool full() const {return (len >= MAX_SR_LEN);}
   inline int length() const {return len;}
   inline int index() const {return cur_index;}
@@ -193,22 +193,23 @@ public:
 
   void checkpath(void) const;
   inline double cost_func(double energy, double euclidean_distance, double hops){
-    return (energy>1.0 && energy<=inf) ? -energy*10000.0+euclidean_distance+hops*100.0 : inf;
+    return (energy>energy_threshold && energy<=inf) ? -energy*10000.0+euclidean_distance+hops*100.0 : inf;
   }
-  double path_cost() ;
-  double path_cost(int i,int j) ;
-  inline double minimum_energy(int i) { return (i==0 && i<len) ? 0.0 : min_energy[i] ; }
-  inline double total_distance(int i) { return (i==0 && i<len) ? 0.0 : hop_distance[i] ; }
-  inline double minimum_energy() { return (len) ? min_energy[len-1] : 0.0 ; }
-  inline double total_distance() { return (len) ? hop_distance[len-1] : 0.0; }
+  // double path_cost() ;
+  // double path_cost(int i,int j) ;
+  // inline double minimum_energy(int i) { return (i==0 && i<len) ? 0.0 : min_energy[i] ; }
+  // inline double total_distance(int i) { return (i==0 && i<len) ? 0.0 : hop_distance[i] ; }
+  // inline double minimum_energy() { return (len) ? min_energy[len-1] : 0.0 ; }
+  // inline double total_distance() { return (len) ? hop_distance[len-1] : 0.0; }
+  static const double inf = 1e18 ;
+  static const double energy_threshold = 1e-3 ;
 private:
   int len;
   int cur_index;
   ID* path;
   ID path_owner;
-  double* min_energy ;
-  double* hop_distance ;
-  static const double inf = 1e18 ;
+  // double* min_energy ;
+  // double* hop_distance ;
 };
 
 void compressPath(Path& path);
@@ -217,6 +218,6 @@ void compressPath(Path& path);
 
 void CopyIntoPath(Path& to, const Path& from, int start, int stop);
 // sets to[0->(stop-start)] = from[start->stop]
-int compare(Path &lhs, int l_len, Path &rhs, int r_len ) ;
+// int compare(Path &lhs, int l_len, Path &rhs, int r_len ) ;
 
 #endif // _path_h

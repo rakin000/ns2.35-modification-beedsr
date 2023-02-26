@@ -62,6 +62,7 @@ extern "C"
 
 #undef DEBUG
 
+#include <map>
 #include <god.h>
 #include "path.h"
 #include "routecache.h"
@@ -113,13 +114,30 @@ public:
   // the link from->to isn't working anymore, purge routes containing
   // it from the cache
 
+  void updateID(ID &id) ;
+  int compare(int i,int l_len,int j,int r_len);
+  double path_cost(int index) ;
+  double path_cost(int index,int i,int j) ;
+  inline double minimum_energy(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : min_energy[index][i] ; }
+  inline double total_distance(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : hop_distance[index][i] ; }
+  inline double minimum_energy(int index) { return (cache[index].length()) ? min_energy[index][cache[index].length()-1] : 0.0 ; }
+  inline double total_distance(int index) { return (cache[index].length()) ? hop_distance[index][cache[index].length()-1] : 0.0; }
+  void recalc_metrics(int index,int i) ; 
+  inline double euclidean_distance(int index,int i,int j){  
+    assert(i>0 && i<cache[index].length() && j>0 && j<cache[index].length() ); 
+    return sqrt( (cache[index][i].pos_x-cache[index][j].pos_x)*(cache[index][i].pos_x-cache[index][j].pos_x) 
+               + (cache[index][i].pos_y-cache[index][j].pos_y)*(cache[index][i].pos_y-cache[index][j].pos_y)
+               + (cache[index][i].pos_z-cache[index][j].pos_z)*(cache[index][i].pos_z-cache[index][j].pos_z) );
+  }
 private:
   Path *cache;
   int size;
   int victim_ptr; // next victim for eviction
   MobiCache *routecache;
   char *name;
-  static const double energy_threshold = 1.0 ;
+  std::map<unsigned long,ID> idmap ;
+  double **min_energy;
+  double **hop_distance;
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -385,19 +403,21 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   index = 0;
   while (primary_cache->searchRoute(dest, len, path, index))
   {
-    min_cache = 2;
-    if (len < min_length)
+    if (min_cache == 0 || primary_cache->compare(min_index,min_length,index,len) )
     {
+      min_cache = 2;
       min_length = len;
+      min_index = index;
       route = path;
     }
     index++;
   }
 
+  min_index=-1
   index = 0;
   while (secondary_cache->searchRoute(dest, len, path, index))
   {
-    if (len < min_length)
+    if (min_cache == 0 || secondary_cache->compare(min_index,min_length,index,len)  )
     {
       min_index = index;
       min_cache = 1;
@@ -484,11 +504,23 @@ Cache::Cache(char *name, int size, MobiCache *rtcache)
   cache = new Path[size];
   routecache = rtcache;
   victim_ptr = 0;
+  min_energy = new double*[size];
+  hop_distance = new double*[size];
+  for(int i=0;i<size;i++){
+    min_energy[i]=new double[MAX_SR_LEN];
+    hop_distance[i]=new double[MAX_SR_LEN];
+  }
 }
 
 Cache::~Cache()
 {
   delete[] cache;
+  for(int i=0;i<size;i++){
+    delete [] min_energy[i];
+    delete [] hop_distance[i] ;
+  }
+  delete [] min_energy ;
+  delete [] hop_distance ;
 }
 
 // look for dest in cache, starting at index,
@@ -500,28 +532,25 @@ bool Cache::searchRoute(const ID &dest, int &i, Path &path, int &index)
   int path_i = -1; 
   for (; index < size; index++)
     for (int n = 0; n < cache[index].length(); n++){
-      if( cache[index].minimum_energy() < 1.0 ) {
-        cache[index].reset() ; 
-        continue ;
-      }
+      recalc_metrics(index,n);
       if (cache[index][n] == dest)
       {
-        if( path_index == -1 || compare(cache[path_index],path_i,cache[index],n) ) {//  cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
-          path_index = index ; 
-          path_i = n; 
-        }
-        // i = n;
-        // path = cache[index];
-        // return true;
+        // if( path_index == -1 || compare(cache[path_index],path_i,cache[index],n) ) {//  cache[path_index].path_cost(0,path_i) > cache[index].path_cost(0,n) ){
+          // path_index = index ; 
+          // path_i = n; 
+        // }
+        i = n;
+        path = cache[index];
+        return true;
       }
     }
-  // return false;
-  if( path_index == -1 ) return 0 ;
+  return false;
+  // if( path_index == -1 ) return 0 ;
   
-  index = path_index; 
-  i = path_i; 
-  path = cache[index] ;
-  return 1; 
+  // index = path_index; 
+  // i = path_i; 
+  // path = cache[index] ;
+  // return 1; 
 }
 
 Path *
@@ -530,6 +559,8 @@ Cache::addRoute(Path &path, int &common_prefix_len)
   int index, m, n;
   int victim;
 
+  for(int i=0;i<path.length();i++)
+    updateID(path[i]) ;
   // see if this route is already in the cache
   for (index = 0; index < size; index++)
   { // for all paths in the cache
@@ -543,12 +574,10 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     if (n == cache[index].length())
     { // new rt completely contains cache[index] (or cache[index] is empty)
       common_prefix_len = n;
-      // for (; n < path.length(); n++)
-        // cache[index].appendToPath(path[n]);
       cache[index] = path; // need new energy and distance information ;
-      if( path.minimum_energy() <= energy_threshold ){
-        cache[index].reset() ;
-      }
+      // if( path.minimum_energy() <= energy_threshold ){
+        // cache[index].reset() ;
+      // }
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s suffix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),
@@ -558,10 +587,12 @@ Cache::addRoute(Path &path, int &common_prefix_len)
     else if (n == path.length())
     { // new route already contained in the cache
       common_prefix_len = n;
-      cache[index] = path; // need new energy and distance information ;
-      if( path.minimum_energy() <= energy_threshold ){
-        cache[index].reset() ;
-      }
+      // for (; n < path.length(); n++)
+        // cache[index].appendToPath(path[n]);
+      // cache[index] = path; // need new energy and distance information ;
+      // if( path.minimum_energy() <= energy_threshold ){
+        // cache[index].reset() ;
+      // }
       if (verbose_debug)
         routecache->trace("SRC %.9f _%s_ %s prefix-rule (len %d/%d) %s",
                           Scheduler::instance().clock(), routecache->net_id.dump(),
@@ -717,7 +748,73 @@ int Cache::pickVictim(int exclude)
 #endif
   return victim;
 }
+double 
+Cache::path_cost(int index) {
+  return (cache[index].length()>0) ? cache[index].cost_func(min_energy[index][cache[index].length()-1], hop_distance[index][cache[index].length()-1], cache[index].length()) : cache[index].cost_func(0.0,0.0,cache[index].length()); 
+}
 
+double 
+Cache::path_cost(int index,int i,int j) {
+  assert( i>0 && i<cache[index].length() && j>0 && j<cache[index].length() && i<=j ) ; 
+  double e=Path::inf,ed=0.0;
+  e= min_energy[index][j];
+  ed = hop_distance[index][j]-hop_distance[index][i];
+
+  return (cache[index].length()>0) ? cache[index].cost_func(e,ed,cache[index].length()) : cache[index].cost_func(0,0,cache[index].length());  
+} 
+int 
+Cache::compare(int i,int l_len,int j, int r_len ){
+  assert( l_len < cache[i].length() && r_len < cache[j].length() ) ; 
+  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
+  
+  e1 = minimum_energy(i,l_len);
+  e2 = minimum_energy(j,r_len) ;
+  ed1 = total_distance(i,l_len); 
+  ed2 = total_distance(j,r_len) ;
+  
+  e1 = (e1 == 1e18) ? 0.0 : e1;
+  e2 = (e2 == 1e18) ? 0.0 : e2;
+
+  if( e1 < Path::energy_threshold) 
+    return 1; 
+  if( e2 < Path::energy_threshold ) 
+    return 0 ;
+  
+  if( l_len < r_len )
+    return 0; 
+  if( l_len > r_len ) 
+    return 1; 
+  if( e1 > e2) 
+    return 0 ;
+  if( e1 < e2) 
+    return 1;  
+  if( ed1 < ed2 ) 
+    return 0 ;
+  if (ed1 > ed2 ) 
+    return 1; 
+  return 1 ;
+}
+void 
+Cache::updateID(ID &id){
+  if( idmap.count(id.addr) ){
+    if( id.t > idmap[id.addr].t )
+      idmap[id.addr] = id; 
+    else id = idmap[id.addr] ;
+  }
+  else idmap[id.addr] = id ;
+}
+void 
+Cache::recalc_metrics(int index,int i){
+  assert(i<cache[index].length());
+  if( !i ){
+    min_energy[index][i] = cache[index][i].node_energy ;
+    hop_distance[index][i] = 0.0;
+  }
+  else {
+    min_energy[index][i] = min(cache[index][i].node_energy,min_energy[index][i-1]) ;
+    hop_distance[index][i] = hop_distance[index][i-1] + euclidean_distance(index,i,i-1) ; 
+  }
+}
 #ifdef DSR_CACHE_STATS
 
 /*

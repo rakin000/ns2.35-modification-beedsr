@@ -112,25 +112,25 @@ ID::dump() const
 Path::Path(int route_len, const ID *route)
 {
   path = new ID[MAX_SR_LEN];
-  min_energy = new double[MAX_SR_LEN];
-  hop_distance = new double[MAX_SR_LEN] ;
+  // min_energy = new double[MAX_SR_LEN];
+  // hop_distance = new double[MAX_SR_LEN] ;
   assert(route_len <= MAX_SR_LEN);
   //  route_len = (route == NULL : 0 ? route_len);
   // a more cute solution, follow the above with the then clause
-  min_energy[0] = inf;
-  hop_distance[0] = 0.0 ;
+  // min_energy[0] = inf;
+  // hop_distance[0] = 0.0 ;
   if (route != NULL)
   {
     for (int c = 0; c < route_len; c++)
     {
       path[c] = route[c];
-      min_energy[c] = (c>0) ? min(min_energy[c-1],route[c].node_energy) : route[c].node_energy ;
+      // min_energy[c] = (c>0) ? min(min_energy[c-1],route[c].node_energy) : route[c].node_energy ;
     }
-    for(int c=1;c<route_len;c++){
-      hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) 
-                            + (path[c].pos_y-path[c+1].pos_y)*(path[c].pos_y-path[c+1].pos_y)
-                            + (path[c].pos_z-path[c+1].pos_z)*(path[c].pos_z-path[c+1].pos_z) ); */
-    }
+    // for(int c=1;c<route_len;c++){
+      // hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) 
+                            // + (path[c].pos_y-path[c+1].pos_y)*(path[c].pos_y-path[c+1].pos_y)
+                            // + (path[c].pos_z-path[c+1].pos_z)*(path[c].pos_z-path[c+1].pos_z) ); */
+    // }
     len = route_len;
   }
   else
@@ -143,10 +143,10 @@ Path::Path(int route_len, const ID *route)
 Path::Path()
 {
   path = new ID[MAX_SR_LEN];
-  hop_distance = new double[MAX_SR_LEN];
-  min_energy = new double[MAX_SR_LEN];
-  hop_distance[0] = 0.0;
-  min_energy[0] = inf; 
+  // hop_distance = new double[MAX_SR_LEN];
+  // min_energy = new double[MAX_SR_LEN];
+  // hop_distance[0] = 0.0;
+  // min_energy[0] = inf; 
   len = 0;
   cur_index = 0;
 }
@@ -155,17 +155,17 @@ Path::Path(const struct sr_addr *addrs, int len)
 { /* make a path from the bits of an NS source route header */
   assert(len <= MAX_SR_LEN);
   path = new ID[MAX_SR_LEN];
-  hop_distance = new double[MAX_SR_LEN];
-  min_energy = new double[MAX_SR_LEN];
-  hop_distance[0] = 0.0;
-  min_energy[0] = inf; 
+  // hop_distance = new double[MAX_SR_LEN];
+  // min_energy = new double[MAX_SR_LEN];
+  // hop_distance[0] = 0.0;
+  // min_energy[0] = inf; 
   for (int i = 0; i < len; i++){
     path[i] = ID(addrs[i]);
-    min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
+    // min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
   }
-  for( int c=1;c<len;c++){
-    hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
-  }
+  // for( int c=1;c<len;c++){
+    // hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
+  // }
   this->len = len;
   cur_index = 0;
 }
@@ -173,10 +173,10 @@ Path::Path(const struct sr_addr *addrs, int len)
 Path::Path(struct hdr_sr *srh)
 { /* make a path from the bits of an NS source route header */
   path = new ID[MAX_SR_LEN];
-  hop_distance = new double[MAX_SR_LEN];
-  min_energy = new double[MAX_SR_LEN];
-  hop_distance[0] = 0.0;
-  min_energy[0] = inf; 
+  // hop_distance = new double[MAX_SR_LEN];
+  // min_energy = new double[MAX_SR_LEN];
+  // hop_distance[0] = 0.0;
+  // min_energy[0] = inf; 
   if (!srh->valid())
   {
     len = 0;
@@ -191,11 +191,11 @@ Path::Path(struct hdr_sr *srh)
 
   for (int i = 0; i < len; i++){
     path[i] = ID(srh->addrs()[i]);
-    min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
+    // min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
   }
-  for( int c=1;c<len;c++){
-    hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
-  }
+  // for( int c=1;c<len;c++){
+    // hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
+  // }
 }
 
 void Path::fillSR(struct hdr_sr *srh)
@@ -204,14 +204,14 @@ void Path::fillSR(struct hdr_sr *srh)
   {
     path[i].fillSRAddr(srh->addrs()[i]);
   }
-  hop_distance[0] = 0.0;
-  min_energy[0] = inf; 
-  for (int i = 0; i < len; i++){
-    min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
-  }
-  for( int c=1;c<len;c++){
-    hop_distance[c] += hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
-  }
+  // hop_distance[0] = 0.0;
+  // min_energy[0] = inf; 
+  // for (int i = 0; i < len; i++){
+    // min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
+  // }
+  // for( int c=1;c<len;c++){
+    // hop_distance[c] += hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
+  // }
   srh->num_addrs() = len;
   srh->cur_addr() = cur_index;
 }
@@ -219,8 +219,8 @@ void Path::fillSR(struct hdr_sr *srh)
 Path::Path(const Path &old)
 {
   path = new ID[MAX_SR_LEN];
-  hop_distance = new double[MAX_SR_LEN];
-  min_energy = new double[MAX_SR_LEN]; 
+  // hop_distance = new double[MAX_SR_LEN];
+  // min_energy = new double[MAX_SR_LEN]; 
  
   // hop_distance[0] = 0.0;
   // min_energy[0] = inf; 
@@ -229,16 +229,16 @@ Path::Path(const Path &old)
   {
     for (int c = 0; c < old.len; c++){
       path[c] = old.path[c];
-      min_energy[c] = old.min_energy[c] ;
-      hop_distance[c] = old.hop_distance[c] ;
+      // min_energy[c] = old.min_energy[c] ;
+      // hop_distance[c] = old.hop_distance[c] ;
     }
     len = old.len;
   }
   else
   {
     len = 0;
-    min_energy[0] = inf; 
-    hop_distance[0] = 0.0 ;
+    // min_energy[0] = inf; 
+    // hop_distance[0] = 0.0 ;
   }
   cur_index = old.cur_index;
   path_owner = old.path_owner;
@@ -246,8 +246,9 @@ Path::Path(const Path &old)
 
 Path::~Path()
 {
-  delete[] path; delete [] min_energy ;
-  delete [] hop_distance ;
+  delete[] path;
+  // delete [] min_energy ;
+  // delete [] hop_distance ;
 }
 
 void Path::operator=(const Path &rhs)
@@ -276,8 +277,8 @@ void Path::operator=(const Path &rhs)
     len = rhs.len;
     for (int c = 0; c < len; c++) {
       path[c] = rhs.path[c];
-      min_energy[c] = rhs.min_energy[c];
-      hop_distance[c] = rhs.hop_distance[c] ;
+      // min_energy[c] = rhs.min_energy[c];
+      // hop_distance[c] = rhs.hop_distance[c] ;
     }
   }
   // note: i don't return *this cause I don't think assignments should
@@ -310,8 +311,8 @@ void Path::appendPath(Path &p)
       return;
     }
 // add energy and distance infromation 
-    min_energy[i] = (i>0) ? min(min_energy[i-1],p[i].node_energy) : p[i].node_energy; 
-    hop_distance[i] = (i>0) ? euclidean_distance(i,i-1)+hop_distance[i-1] : 0.0 ;
+    // min_energy[i] = (i>0) ? min(min_energy[i-1],p[i].node_energy) : p[i].node_energy; 
+    // hop_distance[i] = (i>0) ? euclidean_distance(i,i-1)+hop_distance[i-1] : 0.0 ;
   }
 }
 
@@ -343,8 +344,8 @@ void Path::copyInto(Path &to) const
   to.len = len;
   for (int c = 0; c < len; c++){
     to.path[c] = path[c];
-    to.min_energy[c] = min_energy[c] ;
-    to.hop_distance[c] = hop_distance[c] ;
+    // to.min_energy[c] = min_energy[c] ;
+    // to.hop_distance[c] = hop_distance[c] ;
   }
   to.path_owner = path_owner;
 }
@@ -363,14 +364,14 @@ Path Path::reverse() const
   p.len = len;
   p.cur_index = (len - 1) - cur_index;
   
-  p.min_energy[0] = inf; 
-  p.hop_distance[0] = 0.0 ;
-  for (int i = 0; i < len; i++){
-    p.min_energy[i] = (i>0) ? min(p.min_energy[i-1],p.path[i].node_energy) : p.path[i].node_energy ;
-  }
-  for( int c=1;c<len;c++){
-    p.hop_distance[c] = p.hop_distance[c-1] + p.euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
-  }
+  // p.min_energy[0] = inf; 
+  // p.hop_distance[0] = 0.0 ;
+  // for (int i = 0; i < len; i++){
+    // p.min_energy[i] = (i>0) ? min(p.min_energy[i-1],p.path[i].node_energy) : p.path[i].node_energy ;
+  // }
+  // for( int c=1;c<len;c++){
+    // p.hop_distance[c] = p.hop_distance[c-1] + p.euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
+  // }
   return p;
 }
 
@@ -388,14 +389,14 @@ void Path::reverseInPlace()
   }
   cur_index = (len - 1) - cur_index;
   
-  min_energy[0] = inf; 
-  hop_distance[0] = 0.0 ;
-  for (int i = 0; i < len; i++){
-    min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
-  }
-  for( int c=1;c<len;c++){
-    hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
-  }
+  // min_energy[0] = inf; 
+  // hop_distance[0] = 0.0 ;
+  // for (int i = 0; i < len; i++){
+    // min_energy[i] = (i>0) ? min(min_energy[i-1],path[i].node_energy) : path[i].node_energy ;
+  // }
+  // for( int c=1;c<len;c++){
+    // hop_distance[c] = hop_distance[c-1] + euclidean_distance(c,c-1); /* sqrt( (path[c].pos_x-path[c+1].pos_x)*(path[c].pos_x-path[c+1].pos_x) */ 
+  // }
 }
 
 int Path::size() const
@@ -469,20 +470,20 @@ Path::dump() const
   return rtn_buf;
 }
 
-double 
-Path::path_cost() {
-  return (len>0) ? cost_func(min_energy[len-1], hop_distance[len-1], len) : cost_func(0.0,0.0,len); 
-}
+// double 
+// Path::path_cost() {
+//   return (len>0) ? cost_func(min_energy[len-1], hop_distance[len-1], len) : cost_func(0.0,0.0,len); 
+// }
 
-double 
-Path::path_cost(int i,int j) {
-  assert( i>0 && i<len && j>0 && j<len && i<=j ) ; 
-  double e=inf,ed=0.0;
-  e= min_energy[j];
-  ed = hop_distance[j]-hop_distance[i];
+// double 
+// Path::path_cost(int i,int j) {
+//   assert( i>0 && i<len && j>0 && j<len && i<=j ) ; 
+//   double e=inf,ed=0.0;
+//   e= min_energy[j];
+//   ed = hop_distance[j]-hop_distance[i];
 
-  return (len>0) ? cost_func(e,ed,len) : cost_func(0,0,len);  
-}
+//   return (len>0) ? cost_func(e,ed,len) : cost_func(0,0,len);  
+// }
 
 void compressPath(Path &path)
 // take a path and remove any double backs from it
@@ -546,45 +547,45 @@ void Path::checkpath() const
   }
 }
 
-int compare(Path &lhs,int l_len, Path &rhs, int r_len ){
-  assert( l_len < lhs.length() && r_len < rhs.length() ) ; 
-  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
+// int compare(Path &lhs,int l_len, Path &rhs, int r_len ){
+//   assert( l_len < lhs.length() && r_len < rhs.length() ) ; 
+//   double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
 
-  // for(int i=0;i<=l_len;i++)
-  //   e1= min(e1,lhs[i].node_energy) ;
-  // for(int i=0;i<l_len;i++)
-  //   ed1 += lhs.euclidean_distance(i,i+1);
-  // for(int i=0;i<=l_len;i++)
-  //   e2= min(e2,rhs[i].node_energy) ;
-  // for(int i=0;i<l_len;i++)
-  //   ed2 += rhs.euclidean_distance(i,i+1);
+//   // for(int i=0;i<=l_len;i++)
+//   //   e1= min(e1,lhs[i].node_energy) ;
+//   // for(int i=0;i<l_len;i++)
+//   //   ed1 += lhs.euclidean_distance(i,i+1);
+//   // for(int i=0;i<=l_len;i++)
+//   //   e2= min(e2,rhs[i].node_energy) ;
+//   // for(int i=0;i<l_len;i++)
+//   //   ed2 += rhs.euclidean_distance(i,i+1);
 
-  e1 = lhs.minimum_energy(l_len);
-  e2 = rhs.minimum_energy(r_len) ;
-  ed1 = lhs.total_distance(l_len); 
-  ed2 = rhs.total_distance(r_len) ;
+//   e1 = lhs.minimum_energy(l_len);
+//   e2 = rhs.minimum_energy(r_len) ;
+//   ed1 = lhs.total_distance(l_len); 
+//   ed2 = rhs.total_distance(r_len) ;
   
-  e1 = (e1 == 1e18) ? 0.0 : e1;
-  e2 = (e2 == 1e18) ? 0.0 : e2;
+//   e1 = (e1 == 1e18) ? 0.0 : e1;
+//   e2 = (e2 == 1e18) ? 0.0 : e2;
 
-  if( e1 < 1.0 ) 
-    return 1; 
-  if( e2 < 1.0 ) 
-    return 0 ;
+//   if( e1 < 1.0 ) 
+//     return 1; 
+//   if( e2 < 1.0 ) 
+//     return 0 ;
   
-  if( l_len < r_len )
-    return 0; 
-  if( l_len > r_len ) 
-    return 1; 
-  if( e1+ed1 > e2+ed2 ) 
-    return 0 ;
-  if( e1+ed1 < e2+ed2 ) 
-    return 1;  
-  // if( ed1 < ed2 ) 
-    // return 0 ;
-  // if (ed1 > ed2 ) 
-    // return 1; 
+//   if( l_len < r_len )
+//     return 0; 
+//   if( l_len > r_len ) 
+//     return 1; 
+//   if( e1+ed1 > e2+ed2 ) 
+//     return 0 ;
+//   if( e1+ed1 < e2+ed2 ) 
+//     return 1;  
+//   // if( ed1 < ed2 ) 
+//     // return 0 ;
+//   // if (ed1 > ed2 ) 
+//     // return 1; 
   
 
-  return 1 ;
-}
+//   return 1 ;
+// }
