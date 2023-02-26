@@ -116,6 +116,7 @@ public:
 
   void updateID(ID &id) ;
   int compare(int i,int l_len,int j,int r_len);
+  static int compare(Cache *c1, int index1, int len1, Cache *c2, int index2, int len2);
   double path_cost(int index) ;
   double path_cost(int index,int i,int j) ;
   inline double minimum_energy(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : min_energy[index][i] ; }
@@ -395,6 +396,7 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   int min_index = -1;
   int min_length = MAX_SR_LEN + 1;
   int min_cache = 0; // 2 == primary, 1 = secondary
+  Cache *min_cache_ptr=0 ;
   int index;
   int len;
 
@@ -403,9 +405,10 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   index = 0;
   while (primary_cache->searchRoute(dest, len, path, index))
   {
-    if (min_cache == 0 || primary_cache->compare(min_index,min_length,index,len) )
+    if (min_cache == 0 || Cache::compare(min_cache_ptr,min_index,min_length, primary_cache,index,len) ) // primary_cache->compare(min_index,min_length,index,len) )
     {
       min_cache = 2;
+      min_cache_ptr = primary_cache ;
       min_length = len;
       min_index = index;
       route = path;
@@ -417,10 +420,11 @@ bool MobiCache::findRoute(ID dest, Path &route, int for_me)
   index = 0;
   while (secondary_cache->searchRoute(dest, len, path, index))
   {
-    if (min_cache == 0 || secondary_cache->compare(min_index,min_length,index,len)  )
+    if (min_cache == 0 || Cache::compare(min_cache_ptr,min_index,min_length, secondary_cache,index,len) ) // secondary_cache->compare(min_index,min_length,index,len)  )
     {
       min_index = index;
       min_cache = 1;
+      min_cache_ptr = secondary_cache ;
       min_length = len;
       route = path;
     }
@@ -794,6 +798,39 @@ Cache::compare(int i,int l_len,int j, int r_len ){
     return 1; 
   return 1 ;
 }
+int 
+Cache::compare(Cache *c1, int i,int l_len, Cache *c2, int j, int r_len ){
+  assert( l_len < c1->cache[i].length() && r_len < c2->cache[j].length() ) ; 
+  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
+  
+  e1 = c1->minimum_energy(i,l_len);
+  e2 = c2->minimum_energy(j,r_len) ;
+  ed1 = c1->total_distance(i,l_len); 
+  ed2 = c2->total_distance(j,r_len) ;
+  
+  e1 = (e1 == 1e18) ? 0.0 : e1;
+  e2 = (e2 == 1e18) ? 0.0 : e2;
+
+  if( e1 < Path::energy_threshold) 
+    return 1; 
+  if( e2 < Path::energy_threshold ) 
+    return 0 ;
+  
+  if( l_len < r_len )
+    return 0; 
+  if( l_len > r_len ) 
+    return 1; 
+  if( e1 > e2) 
+    return 0 ;
+  if( e1 < e2) 
+    return 1;  
+  if( ed1 < ed2 ) 
+    return 0 ;
+  if (ed1 > ed2 ) 
+    return 1; 
+  return 1 ;
+}
+
 void 
 Cache::updateID(ID &id){
   if( idmap.count(id.addr) ){
