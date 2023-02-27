@@ -120,8 +120,10 @@ public:
   double path_cost(int index) ;
   double path_cost(int index,int i,int j) ;
   inline double minimum_energy(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : min_energy[index][i] ; }
+  inline double total_energy(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : tot_energy[index][i] ; }
   inline double total_distance(int index, int i) { return (i==0 && i<cache[index].length()) ? 0.0 : hop_distance[index][i] ; }
   inline double minimum_energy(int index) { return (cache[index].length()) ? min_energy[index][cache[index].length()-1] : 0.0 ; }
+  inline double total_energy(int index) { return (cache[index].length()) ? tot_energy[index][cache[index].length()-1] : 0.0 ; }
   inline double total_distance(int index) { return (cache[index].length()) ? hop_distance[index][cache[index].length()-1] : 0.0; }
   void recalc_metrics(int index,int i) ; 
   inline double euclidean_distance(int index,int i,int j){  
@@ -138,6 +140,7 @@ private:
   char *name;
   std::map<unsigned long,ID> idmap ;
   double **min_energy;
+  double **tot_energy ;
   double **hop_distance;
 };
 
@@ -206,7 +209,7 @@ public:
 ----------------------------------------------------------------*/
 MobiCache::MobiCache() : RouteCache()
 {
-  primary_cache = new Cache("primary", 30, this);
+  primary_cache = new Cache("primary", 60, this);
   secondary_cache = new Cache("secondary", 64, this);
   // secondary_cache = new Cache("secondary", 10000, this);
   assert(primary_cache != NULL && secondary_cache != NULL);
@@ -511,8 +514,10 @@ Cache::Cache(char *name, int size, MobiCache *rtcache)
   victim_ptr = 0;
   min_energy = new double*[size];
   hop_distance = new double*[size];
+  tot_energy = new double*[size] ;
   for(int i=0;i<size;i++){
     min_energy[i]=new double[MAX_SR_LEN];
+    tot_energy[i]=new double[MAX_SR_LEN];
     hop_distance[i]=new double[MAX_SR_LEN];
   }
 }
@@ -522,9 +527,11 @@ Cache::~Cache()
   delete[] cache;
   for(int i=0;i<size;i++){
     delete [] min_energy[i];
+    delete [] tot_energy[i];
     delete [] hop_distance[i] ;
   }
   delete [] min_energy ;
+  delete [] tot_energy ;
   delete [] hop_distance ;
 }
 
@@ -802,15 +809,19 @@ Cache::compare(int i,int l_len,int j, int r_len ){
 int 
 Cache::compare(Cache *c1, int i,int l_len, Cache *c2, int j, int r_len ){
   assert( l_len < c1->cache[i].length() && r_len < c2->cache[j].length() ) ; 
-  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0 ;
+  // return c1->path_cost(i,0,l_len) > c2->path_cost(j,0,r_len);
+  
+  double e1=1e18,e2=1e18,ed1=0.0,ed2=0.0,te1,te2;
   
   e1 = c1->minimum_energy(i,l_len);
   e2 = c2->minimum_energy(j,r_len) ;
   ed1 = c1->total_distance(i,l_len); 
   ed2 = c2->total_distance(j,r_len) ;
-  
-  e1 = (e1 == 1e18) ? 0.0 : e1;
-  e2 = (e2 == 1e18) ? 0.0 : e2;
+  te1 = c1->total_energy(i,l_len);  
+  te2 = c2->total_energy(j,r_len);  
+
+  e1 = (e1 == Path::inf) ? 0.0 : e1;
+  e2 = (e2 == Path::inf) ? 0.0 : e2;
 
   if( e1 < Path::energy_threshold) 
     return 1; 
@@ -821,15 +832,15 @@ Cache::compare(Cache *c1, int i,int l_len, Cache *c2, int j, int r_len ){
     return 0; 
   if( l_len > r_len ) 
     return 1; 
+ 
   if( ed1 < ed2 ) 
     return 0 ;
   if (ed1 > ed2 ) 
     return 1; 
-  if( e1 > e2) 
+  if( te1 > te2) 
     return 0 ;
-  if( e1 < e2) 
-    return 1;  
-  
+  if( te1 < te2) 
+    return 1; 
   return 1 ;
 }
 
@@ -848,9 +859,11 @@ Cache::recalc_metrics(int index,int i){
   if( !i ){
     min_energy[index][i] = cache[index][i].node_energy ;
     hop_distance[index][i] = 0.0;
+    tot_energy[index][i] = cache[index][i].node_energy ;
   }
   else {
     min_energy[index][i] = min(cache[index][i].node_energy,min_energy[index][i-1]) ;
+    tot_energy[index][i] = cache[index][i].node_energy+min_energy[index][i-1];
     hop_distance[index][i] = hop_distance[index][i-1] + euclidean_distance(index,i,i-1) ; 
   }
 }

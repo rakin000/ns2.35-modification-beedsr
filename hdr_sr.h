@@ -64,7 +64,7 @@
 
 #define SR_HDR_SZ 4		// size of constant part of hdr
 
-#define MAX_SR_LEN 16		// longest source route we can handle
+#define MAX_SR_LEN 23 // 16		// longest source route we can handle
 #define MAX_ROUTE_ERRORS 3	// how many route errors can fit in one pkt?
 
 struct sr_addr {
